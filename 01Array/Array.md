@@ -1,18 +1,33 @@
-## Array in Python
+ # Array in Python
+## Summary of Special Usages
 1. `enumerate()` function could simplify looping with counters. Instead of writing:
-2.  `[0]*3`
+     ```
+    i=0
+    for ele in nums:
+        print(f'nums[{i}]=ele')
+        i = i+1
+    ```
+    We can concisely write as:
+      ```
+    for i,ele in enumerate(nums):
+        print(f'nums[{i}]=ele')
+    ```
+   
+2.  Create a length-3 sequence of zero: `[0]*3`. **Note**. Be careful of using it in multi-dimension, e.g.,` [[0]*3]*2`, this code results in a 2 by 3 matrix whose rows all have the same reference. If you make a change to the first row, the second row will have the same change.
 3. list comprehension
 4. Most list operations are in-place. For example, `nums.sort()`, `nums.reverse()` will change the elements order in place. If you want a new list and don't want to change the original one, use `new_nums = sorted(nums)` insteand
-5. Commonly used 
+
 5. In python3, list1=list2 assigns the reference, while list1=list2.copy() takes a shallow copy of list2. Therefore, if you change the value of list2[0], in the first case list1[0] will also change, but in the latter one list1[0] does not change. Note: if the list elements are not primary datatypes, taking shallow copy only copies their reference, not the real contents.
  
-5. Use list to mimick a stack. Nums.pop()
-5. Two pointers 
-    * slow-fast
-    * left-right
+5. List can be used as a stack. methods: `nums.pop(), nums.append()`
+6. To simulate a queue, consider of using `collections.deque`. Methods: `deque.append(), deque.popleft()`
+
 
 quicksort can be implemented in both ways
 ## Algorithms
+5. Two pointers 
+    * slow-fast
+    * left-right
 ### quicksort
 
 ## Exercises
@@ -24,6 +39,11 @@ Example:
 Input: [-2,1,-3,4,-1,2,1,-5,4],
 Output: 6
 Explanation: [4,-1,2,1] has the largest sum = 6.
+
+This is a classical question from the textbook *Introduction to Algorithms*. 
+The **dynamic programming** approach could solve the problem with O(n) time and O(1) space. 
+- cursum: the maximum sum of subarray **containing** the current element.
+- res: the global maximum sum.
 ```
 class Solution(object):
     def maxSubArray(self, nums):
@@ -40,9 +60,46 @@ class Solution(object):
             res = max(res, cursum)
         return res
 ```
-**Note.** 
-1. The maximum subarray  
-1. Also think of how to use divide-conquer to solve the problem
+
+It could also  solved by divide-conquer with time complexity O(NlogN)
+```
+class Solution:
+    def maxSubArray(self, nums: List[int]) -> int:
+        def findBestSubarray(nums, left, right):
+            # Base case - empty array.
+            if left > right:
+                return -math.inf
+
+            mid = (left + right) // 2
+            curr = best_left_sum = best_right_sum = 0
+
+            # Iterate from the middle to the beginning.
+            for i in range(mid - 1, left - 1, -1):
+                curr += nums[i]
+                best_left_sum = max(best_left_sum, curr)
+
+            # Reset curr and iterate from the middle to the end.
+            curr = 0
+            for i in range(mid + 1, right + 1):
+                curr += nums[i]
+                best_right_sum = max(best_right_sum, curr)
+
+            # The best_combined_sum uses the middle element and
+            # the best possible sum from each half.
+            best_combined_sum = nums[mid] + best_left_sum + best_right_sum
+
+            # Find the best subarray possible from both halves.
+            left_half = findBestSubarray(nums, left, mid - 1)
+            right_half = findBestSubarray(nums, mid + 1, right)
+
+            # The largest of the 3 is the answer for any given input array.
+            return max(best_combined_sum, left_half, right_half)
+        
+        # Our helper function is designed to solve this problem for
+        # any array - so just call it using the entire input!
+        return findBestSubarray(nums, 0, len(nums) - 1)
+
+```
 
 ### 15. 3 Sum
 
@@ -59,7 +116,9 @@ A solution set is:
   [-1, -1, 2]
 ]
 
-There are many ways to solve this problem. Here only list the best one, which uses two pointers.
+There are many ways to solve this problem. Brute-force method is O(n^3). Below is the best solution, which uses two pointers (left-right). 
+
+**Note.** Think of the edge cases carefully, especially avoid duplicate triplets. When increasing the left pointer, we need to stop at the next *different* number. 
 
 ```
 def threeSum(self, nums):
@@ -94,6 +153,58 @@ def threeSum(self, nums):
     return result
 
 ```
+
+### 18. 4 Sum
+This is a follow-up problem from 3sum. We can generalize it to k sum. The idea is using recursive (for k>2) and 2 pointers (base case k=2)
+```
+class Solution:
+    def fourSum(self, nums: List[int], target: int) -> List[List[int]]:
+        # A generalization of 2 sum and 3 sum
+        # All sub functions assume nums sorted in ascending order
+        def twoSum(nums: List[int], target: int) -> List[List[int]]:
+            # find all unique pairs a + b = target using 2 pointers
+            res = []
+            lo = 0
+            hi = len(nums)-1
+            while (lo<hi):
+                s = nums[lo]+nums[hi]
+                if s==target:
+                    res.append([nums[lo],nums[hi]])
+                    lo += 1
+                    hi -= 1
+                    while lo<hi and nums[lo]==nums[lo-1]:
+                        lo += 1
+                elif s<target:
+                    lo += 1
+                else:
+                    hi -= 1
+            return res
+        
+        def kSum(nums: List[int], target:int, k: int) -> List[List[int]]:
+            # base case: k = 2
+            # otherwise, recursively reduce k
+            if k== 2: 
+                return twoSum(nums, target)
+            # check edge cases before looping on elements
+            res = []
+            if len(nums)<3 or nums[0]*k>target or nums[-1]*k<target:
+                return res
+            for i in range(len(nums)-2):
+                # this condition guarantee the tuples are unique
+                if i==0 or nums[i] != nums[i-1]:
+                    for l in kSum(nums[i+1:], target-nums[i], k-1):
+                        res.append([nums[i]] + l)
+            return res
+        
+        # Main function
+        nums.sort()
+        return kSum(nums, target, 4)
+
+```
+### 16. 3Sum Closest(medium)
+Given an integer array nums of length n and an integer target, find three integers in nums such that the sum is closest to target.
+Return the sum of the three integers.
+You may assume that each input would have exactly one solution.
 
 
 ### 27. Remove Element
@@ -337,3 +448,8 @@ class Solution:
 ```
 
 Summary?
+
+
+## Problems Succeeded at first trial
+ *  56. Merge Intervals. 
+Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input. 
