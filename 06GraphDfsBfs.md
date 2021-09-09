@@ -3,7 +3,11 @@ Representation:
 1. adjacency-list: good for sparse graphs
 2. adjacency-matrix: good for dense graphs
 # Problems
+
 ## DFS
+
+DFS on tree is much easier because there is no cycle. DFS on general graphs with cycles need to color the nodes to avoid endless loop.
+
 ### Template
 Graph nodes can be {white, gray, black}
 * white: have not been visited
@@ -36,7 +40,14 @@ Procedure:
 1. Cal DFS(G) for each vertex
 2. When a vertex is finished, insert it onto the front of a list
 3. The resulted list of vertices have the property that all the edges goes from left to right.
+### Tree Traversal
+
+Write in-order, pre-order, post-order with recursive and iterative methods. See Leetcode #94
+
+
+
 ### 200. Number of Islands
+
 Given a 2d grid map of '1's (land) and '0's (water), count the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are all surrounded by water.
 ```
 Input: grid = [
@@ -327,7 +338,7 @@ Note:
 1. A graph, G, is a tree iff the following two conditions are met:
     * G is fully connected.
     * G contains no cycles. 
-In this problem, G is an undirected graph. Therefore we need to record the node's parent, to avoid double check.
+    In this problem, G is an undirected graph. Therefore we need to record the node's parent, to avoid double check.
 2. A quick check is `if len(edges) != n - 1`.
 
 ```
