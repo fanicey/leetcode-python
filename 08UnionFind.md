@@ -1,4 +1,211 @@
-##
+# Basics
+
+## Disjoint Set
+
+### What problem to be solved?
+
+Given a graph (vertices, edges), how to decide if two nodes are connected?
+
+We can easily find this answer by using a disjoint set data structure, also known as "union-find" data structure/algorithm.
+
+### Algorithm
+
+The logic: Each node points to its parent node. A node is a root node if it points to itself. Two nodes are connected if they have the same root node.
+
+Two basic operations:
+
+* `find(x)`: return the root node of x
+* `union(x,y)` link x and y
+
+**Path Compression Optimization**
+
+```
+class Union-Find:
+    def __init__(self, size):
+        self.roots = [i for i in range(size)]
+    def find(self, x):
+        if self.roots[x]!=x:    # <-- do not use while here.
+            self.roots[x] = self.find(roots[x])
+        return self.roots[x]
+    def union(self, x, y):
+        x_p = self.find(x)
+        y_p = self.find(y)
+        self.roots[x_p] = y_p
+```
+
+### When to use Union-Find?
+
+Given a list of edges, not sorted.
+
+Need to check connectivities of nodes
+
+DFS, 
+
+## Problems
+
+### 261. Graph Valid Tree (Medium)
+
+You have a graph of `n` nodes labeled from `0` to `n - 1`. You are given an integer n and a list of `edges` where `edges[i] = [ai, bi]` indicates that there is an undirected edge between nodes `ai` and `bi` in the graph.
+
+Return `true` *if the edges of the given graph make up a valid tree, and* `false` *otherwise*.
+
+Solution: This problem can be solved in many ways: DFS, BFS, union-find. Below uses the union-find algorithm. The important thing is to understand what is a valid tree: (1) no cycle (2) all nodes are connected.
+
+```
+class Solution:
+    def validTree(self, n: int, edges: List[List[int]]) -> bool:
+        if len(edges)!=n-1:
+            return False
+        # valid tree: after scanning all edges, all nodes have the same roots
+        
+        roots = [i for i in range(n)]
+        
+        def find(x):
+            if roots[x] != x:
+                roots[x] = find(roots[x])
+            return roots[x]
+        def union(x, y):
+            rootX = find(x)
+            rootY = find(y)
+            roots[rootY] = rootX
+        def isConnected(x,y):
+            return find(x) == find(y)
+        
+        
+        for edge in edges:
+            if isConnected(*edge):
+                return False
+            union(*edge)
+        
+        root = find(0)
+        for node in range(1, n):
+            if find(node) != root:
+                return False
+        return True
+```
+
+
+
+### 323. Number of Connected Components in an Undirected Graph
+
+Medium
+
+You have a graph of `n` nodes. You are given an integer `n` and an array `edges` where `edges[i] = [ai, bi]` indicates that there is an edge between `ai` and `bi` in the graph.
+
+Return *the number of connected components in the graph*.
+
+Solution: Very similar to the previous problem. The only difference is the main function part:
+
+```
+count = n
+for edge in edges:
+    if not isConnected(*edge):
+        count -= 1 
+    union(*edge)
+return count
+```
+
+Other similar problems:
+
+1101 The Earliest Moment When Everyone Become Friends (medium)
+
+### 1202. Smallest String With Swaps (Medium)
+
+You are given a string `s`, and an array of pairs of indices in the string `pairs` where `pairs[i] = [a, b]` indicates 2 indices(0-indexed) of the string.
+
+You can swap the characters at any pair of indices in the given `pairs` **any number of times**.
+
+Return the lexicographically smallest string that `s` can be changed to after using the swaps.
+
+Solution: The hard part of this problem is to understand the property: we can get any permutation of the vertices within a connected component.
+
+```
+class Solution:
+    def smallestStringWithSwaps(self, s: str, pairs: List[List[int]]) -> str:
+        # using the pairs we can obtain a permutation graph
+        # Find all the connected components in the graph (disjoint sets)
+        # Then sort within each components.
+        n = len(s)
+        roots = [i for i in range(n)]
+        
+        def find(x):
+            if roots[x] != x:
+                roots[x] = find(roots[x])
+            return roots[x]
+        def union(x, y):
+            rootX = find(x)
+            rootY = find(y)
+            roots[rootY] = rootX
+        def isConnected(x,y):
+            return find(x) == find(y)
+        
+        for pair in pairs:
+            union(*pair)
+        components = defaultdict(list)
+        for x in range(n):
+            r = find(x)
+            components[r].append(x)
+        
+        smallestString = ['']*n
+        for r in components:
+            chars = [ s[i] for i in components[r]]
+            chars.sort()
+            for index in range(len(chars)):
+                smallestString[components[r][index]] = chars[index]
+        return ''.join(smallestString)
+```
+
+### 399. Evaluate Division (Medium)
+
+You are given an array of variable pairs `equations` and an array of real numbers `values`, where `equations[i] = [Ai, Bi]` and `values[i]` represent the equation `Ai / Bi = values[i]`. Each `Ai` or `Bi` is a string that represents a single variable.
+
+You are also given some `queries`, where `queries[j] = [Cj, Dj]` represents the `jth` query where you must find the answer for `Cj / Dj = ?`.
+
+Return *the answers to all queries*. If a single answer cannot be determined, return `-1.0`.
+
+**Note:** The input is always valid. You may assume that evaluating the queries will not result in division by zero and that there is no contradiction.
+
+Solution: DFS will not be an efficient way because we need to search for path for every query. 
+
+The solution below uses union-find + weighted graph. Pay attention to the line with the comment. I made a mistake here in first trial because if the query = [x, x], where x is not seen before, we want to output -1, not 1.
+
+```
+class Solution:
+    def calcEquation(self, equations: List[List[str]], values: List[float], queries: List[List[str]]) -> List[float]:
+        # construct the disjoint set
+        graph_weights = defaultdict(tuple)
+        def find(x):
+            if x not in graph_weights:
+                graph_weights[x] = (x, 1)
+            elif graph_weights[x][0] != x:          
+                parent = find(graph_weights[x][0])
+                graph_weights[x] = (parent[0], graph_weights[x][1]*parent[1])
+            return graph_weights[x]
+        def union(x, y, weight): # weight = x/y
+            p_x = find(x)
+            p_y = find(y)
+            if p_x[0] != p_y[0]:
+                graph_weights[p_x[0]] = (p_y[0], weight*graph_weights[y][1]/graph_weights[x][1])
+        
+        for i,eq in enumerate(equations):
+            union(eq[0], eq[1], values[i])
+        
+        outputs = []
+        for query in queries:
+            if query[0] in graph_weights and query[1] in graph_weights: # <-- pay attention
+                p_1 = find(query[0])
+                p_2 = find(query[1])
+                if p_1[0] == p_2[0]:
+                    outputs.append(p_1[1]/p_2[1])
+                else:
+                    outputs.append(-1.0)
+            else:
+                outputs.append(-1.0)
+        return outputs
+```
+
+
+
 ### 684. Redundant Connection
 In this problem, a tree is an undirected graph that is connected and has no cycles.
 

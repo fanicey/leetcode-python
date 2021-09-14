@@ -2,7 +2,7 @@
 Representation:
 1. adjacency-list: good for sparse graphs
 2. adjacency-matrix: good for dense graphs
-# Problems
+# Algorithms
 
 ## DFS
 
@@ -17,7 +17,6 @@ Graph nodes can be {white, gray, black}
 DFS can be implemented recursively, or iteratively by using a stack. Recursive is elegant, but for languages like python, iteration is preferable because of the speed issue.
 ```
 class Solution:
-    #def cloneGraph(self, node: 'Node') -> 'Node':
     def dfs(graph):
         # graph node color
         color = [0]*numNodes
@@ -40,6 +39,57 @@ Procedure:
 1. Cal DFS(G) for each vertex
 2. When a vertex is finished, insert it onto the front of a list
 3. The resulted list of vertices have the property that all the edges goes from left to right.
+### BackTracking
+
+#### 332. Reconstruct Itinerary
+
+You are given a list of airline `tickets` where `tickets[i] = [fromi, toi]` represent the departure and the arrival airports of one flight. Reconstruct the itinerary in order and return it.
+
+All of the tickets belong to a man who departs from `"JFK"`, thus, the itinerary must begin with `"JFK"`. If there are multiple valid itineraries, you should return the itinerary that has the smallest lexical order when read as a single string.
+
+- For example, the itinerary `["JFK", "LGA"]` has a smaller lexical order than `["JFK", "LGB"]`.
+
+You may assume all tickets form at least one valid itinerary. You must use all the tickets once and only once.
+
+```
+class Solution:
+    def _backtracking(self, origin, route):
+        if len(route) == self.numFlights+1:
+            self.itinerary = route
+            return True
+        findItinerary = False
+        for index, place in enumerate(self.flightMap[origin]):
+            if not self.isVisited[origin][index]:
+                self.isVisited[origin][index] = True
+                findItinerary = self._backtracking(place, route+[place])
+                # revert 
+                self.isVisited[origin][index] = False
+                if findItinerary:
+                    break
+        return findItinerary       
+        
+    def findItinerary(self, tickets: List[List[str]]) -> List[str]:
+        # construct an adjacency list
+        # sort the list (greedy)
+        # DFS until find an itinerary that uses all the tickes (backtracking)
+        self.flightMap = defaultdict(list)
+        self.numFlights = len(tickets)
+        for ticket in tickets:
+            self.flightMap[ticket[0]].append(ticket[1])
+        
+        self.isVisited = {}
+        for origin, destinations in self.flightMap.items():
+            destinations.sort()
+            self.isVisited[origin] = [False]*len(destinations)
+        
+        
+        self.itinerary = []
+        self._backtracking('JFK', ['JFK'])
+        return self.itinerary
+```
+
+
+
 ### Tree Traversal
 
 Write in-order, pre-order, post-order with recursive and iterative methods. See Leetcode #94
@@ -62,32 +112,28 @@ Output: 3
 ```
 class Solution:
     def numIslands(self, grid: List[List[str]]) -> int:
-        if len(grid) == 0 or len(grid[0]) == 0:
+        if not grid or not grid[0]:
             return 0
-        num_rows = len(grid)
-        num_cols = len(grid[0])
+        n_row = len(grid)
+        n_col = len(grid[0])
+        visited = [[False]*n_col for i in range(n_row)]
+        count = 0
         
-        # visited is a mask. If grid can be modified, then we can save memory by setting the visited cells to '0'
-        visited = [[False for _ in range(num_cols)]
-                   for i in range(num_rows)]
-    
-        def searchIsland(row, col):
-            if row<0 or row>=num_rows or col<0 or col>=num_cols:
+        def searchIslands(i,j):
+            if i<0 or i>n_row-1 or j<0 or j>n_col-1 or grid[i][j]=="0" or visited[i][j]:
                 return
-            if visited[row][col]:
-                return
-            visited[row][col] = True
-            if grid[row][col] =='1':
-                for (r,c) in [(row-1, col), (row, col-1), (row+1, col), (row, col+1)]:
-                    searchIsland(r,c)
-            
-        num_islands = 0
-        for row in range(len(grid)):
-            for col in range(len(grid[0])):
-                if grid[row][col]=='1' and not visited[row][col]:
-                    num_islands += 1
-                    searchIsland(row, col)
-        return num_islands
+            visited[i][j] = True
+            searchIslands(i-1, j)
+            searchIslands(i+1, j)
+            searchIslands(i, j-1)
+            searchIslands(i, j+1)
+        
+        for r in range(n_row):
+            for c in range(n_col):
+                if grid[r][c]=='1' and not visited[r][c]:
+                    count += 1
+                    searchIslands(r, c)
+        return count
 ```
 ### 785. Is Graph Bipartite?
 Given an undirected graph, return true if and only if it is bipartite.
